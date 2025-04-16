@@ -87,11 +87,9 @@
 
     <date year="2025"/>
 
-    <workgroup>6MAN</workgroup>
+    <workgroup>Network</workgroup>
 
-    <keyword>ICMP</keyword>
-
-    <keyword>ICMPv6</keyword>
+    <keyword>UDP</keyword>
 
     <abstract>
       <t>
