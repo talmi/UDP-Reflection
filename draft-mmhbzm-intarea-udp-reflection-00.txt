@@ -2,7 +2,7 @@
 
 
 
-6MAN                                                          S. Moeller
+Network                                                       S. Moeller
 Internet-Draft                                              Organization
 Updates: 8335 (if approved)                                   T. Mizrahi
 Intended status: Standards Track                                  Huawei
