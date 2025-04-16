@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd">
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<?rfc strict="yes" ?>
+<?rfc toc="yes"?>
+<?rfc tocdepth="4"?>
+<?rfc symrefs="yes"?>
+<?rfc sortrefs="yes" ?>
+<?rfc compact="yes" ?>
+<?rfc subcompact="no" ?>
+<rfc category="std" docName="draft-mmhbzm-intarea-udp-reflection-00"
+     ipr="trust200902" updates="8335">
+  <front>
+    <title abbrev="UDP Reflection">User Datagram Protocol (UDP) Reflection</title>
+
+    <author fullname="Sebastian Moeller" initials="S." surname="Moeller">
+      <organization abbrev="">Organization</organization>
+
+      <address>
+        <email>moeller0@gmx.de</email>
+      </address>
+    </author>
+
+    <author fullname="Tal Mizrahi" initials="T." surname="Mizrahi">
+      <organization abbrev="">Huawei</organization>
+
+      <address>
+        <postal>
+          <street>Matam</street>
+
+          <city>Haifa</city>
+
+          <code>3190501</code>
+
+          <country>Israel</country>
+        </postal>
+
+        <email>tal.mizrahi.phd@gmail.com</email>
+      </address>
+    </author>
+
+    <author fullname="Xiaoming He" initials="X." surname="He">
+      <organization>China Telecom</organization>
+
+      <address>
+        <email>hexm4@chinatelecom.cn</email>
+      </address>
+    </author>
+
+    <author fullname="Tianran Zhou" initials="T." surname="Zhou">
+      <organization abbrev="">Huawei</organization>
+
+      <address>
+        <postal>
+          <street>156 Beiqing Rd.</street>
+
+          <city>Beijing</city>
+
+          <code>100095</code>
+
+          <country>China</country>
+        </postal>
+
+        <email>zhoutianran@huawei.com</email>
+      </address>
+    </author>
+
+    <author fullname="Ron Bonica" initials="R." surname="Bonica">
+      <organization>Juniper Networks</organization>
+
+      <address>
+        <postal>
+          <country>USA</country>
+        </postal>
+
+        <email>rbonica@juniper.net</email>
+      </address>
+    </author>
+
+    <author fullname="Xiao Min" initials="X." surname="Min">
+      <organization>ZTE Corp.</organization>
+
+      <address>
+        <email>xiao.min2@zte.com.cn</email>
+      </address>
+    </author>
+
+    <date year="2025"/>
+
+    <workgroup>6MAN</workgroup>
+
+    <keyword>ICMP</keyword>
+
+    <keyword>ICMPv6</keyword>
+
+    <abstract>
+      <t>
+      This document describes the UDP Reflection utility. It is similar to Ping 
+      in that it relies on a stateless message exchange between two hosts. 
+      The initiating host sends a UDP packet with an unused destination port
+      and the destination host sends back an ICMP Destination Unreachable.
+      The payload of the ICMP message includes a possibly trimmed copy of the
+      original UDP message. Specifically, if the original message is sent 
+      over IPv6, the ICMP message includes the IPv6 header and IPv6 extension 
+      headers and options if they are present. 
+      </t>
+    </abstract>
+  </front>
+
+  <middle>
+    <section title="Introduction">
+      <t>The UDP Reflection utility is a UDP <xref target="RFC768"/> based
+      diagnostic tool. It is similar to the Ping <xref target="RFC2151"/> 
+      utility as it uses a message exchange between an initiating host and
+      a destination host.</t> 
+
+      <t>Each message exchange includes:</t> 
+      <t><list style="symbols">
+          <t>A UDP packet that is sent by the initiating host to the 
+          destination host with a reserved destination port number.
+          Port 33434 has been reserved by IANA for Traceroute and is
+          used in UDP Reflection as well.</t>
+
+          <t>An ICMP Destination Unreachable that is sent back to the
+          initiating host due to the unused port in the UDP packet. The
+          ICMP message includes, in its payload, the original UDP packet
+          (or a trimmed version of it), including its IP header and
+          payload.</t>
+        </list></t>
+
+      <t>UDP Reflection operates in a similar manner to the last hop of 
+      the Traceroute utility <xref target="RFC2151"/>. As opposed to 
+      Traceroute, UDP Reflection does not iteratively try to reach each
+      of the routers along the path to the destination, but directly
+      sends a UDP packet to the destination host.</t>
+
+      <t>The UDP Reflection exchange allows the initiating host to
+      verify the reachability to the destination and to measure the round-trip
+      time. The initiating host can also extract the header of the original
+      packet from the received ICMP message, allowing to analyze header
+      fields or extension headers that were modified along the path
+      between the initiating host and the destination host.</t>
+
+    </section>
+
+    <section title="Requirement Language">
+        <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+        "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+        "OPTIONAL" in this document are to be interpreted as described in BCP
+        14 <xref target="RFC2119"/> <xref target="RFC8174"/> when, and only
+        when, they appear in all capitals, as shown here.</t>
+    </section>
+
+
+    <section anchor="UseCaseSec" title="Use Cases">
+      <t>The following protocols define mutable IPv6 extension headers that can be
+      used to trace a path and its performance:</t>
+
+      <t><list style="symbols">
+          <t>IPv6 Options for In Situ Operations, Administration, and
+          Maintenance (IOAM) <xref target="RFC9486"/></t>
+
+          <t>Inband Flow Analyzer <xref target="I-D.kumar-ippm-ifa"/></t>
+
+          <t>Path Tracing in SRv6 networks <xref
+          target="I-D.filsfils-ippm-path-tracing"/></t>
+
+          <t>Segment Routing Header encapsulation for In-situ OAM Data <xref
+          target="I-D.ali-spring-ioam-srv6"/></t>
+        </list></t>
+
+      <t>These extensions are used to collect information along a packet's
+      delivery path. Currently, the collected information is sent to a
+      controller for processing. However, in some cases this information is
+      relevant to the sender.</t>
+
+      <t>The Reflection utility defined in this document provides a mechanism by which this
+      information can be returned to the initiating host.</t>
+    </section>
+
+    <section anchor="TheorySec" title="Theory of Operation">
+      <t>The UDP Reflection utility is invoked by an initiating host that sends
+      a sequence of one or more packets. Each message exchange includes the
+      following procedure:</t>
+
+      <t><list style="symbols">
+          <t>The initiating host sends a UDP packet with a reserved UDP 
+          destination port. Port 33434, which has been reserved by IANA for 
+          Traceroute, is used for this purpose. The packet can be sent
+          over IPv4 or IPv6. If the packet is IPv6, it can include one
+          or more extension fields.</t>
+
+          <t>The destination host receives the UDP packet and detects that
+          the UDP destination port is unused. It generates an ICMP Destination
+          Unreachable back to the initiating host. If the original packet
+          is IPv4, then the ICMP message includes the first 8 octets of 
+          the original packet, as defined in <xref target="RFC792"/>. If
+          the original packet is IPv6, the ICMP message includes as much
+          of the original message as possible without exceeding the MTU,
+          as defined in <xref target="RFC4443"/>.</t>
+
+          <t>The initiating host receives the ICMP message and can analyze
+          its payload.</t>
+        </list></t>
+    </section>
+
+    <section anchor="IANA" title="IANA Considerations">
+      <t>This document does not include any requirements from IANA.</t>
+    </section>
+
+    <section anchor="Security" title="Security Considerations">
+      <t>From a security perspective this document does not introduce new 
+      security threats beyond the threats that are already applicable for 
+      existing ICMP messages, and are described in <xref target="RFC792"/> 
+      and <xref target="RFC4443"/>.</t>
+    </section>
+  
+  </middle>
+
+  <back>
+    <references title="Normative References">
+      <?rfc include='reference.RFC.2119'?>
+
+      <?rfc include='reference.RFC.8174'?>
+
+      <?rfc include='reference.RFC.768'?>
+
+      <?rfc include='reference.RFC.792'?>
+
+      <?rfc include='reference.RFC.4443'?>
+    </references>
+
+    <references title="Informative References">
+      <?rfc include='reference.RFC.9486'?>
+
+      <?rfc include='reference.I-D.filsfils-ippm-path-tracing'?>
+
+      <?rfc include='reference.I-D.ali-spring-ioam-srv6'?>
+
+      <?rfc include='reference.I-D.kumar-ippm-ifa'?>
+
+      <?rfc include='reference.RFC.2151'?>
+
+    </references>
+
+	</back>
+</rfc>

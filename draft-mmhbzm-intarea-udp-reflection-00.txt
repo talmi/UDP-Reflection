@@ -1,0 +1,336 @@
+
+
+
+
+6MAN                                                          S. Moeller
+Internet-Draft                                              Organization
+Updates: 8335 (if approved)                                   T. Mizrahi
+Intended status: Standards Track                                  Huawei
+Expires: 18 October 2025                                           X. He
+                                                           China Telecom
+                                                                 T. Zhou
+                                                                  Huawei
+                                                               R. Bonica
+                                                        Juniper Networks
+                                                                  X. Min
+                                                               ZTE Corp.
+                                                           16 April 2025
+
+
+                User Datagram Protocol (UDP) Reflection
+                 draft-mmhbzm-intarea-udp-reflection-00
+
+Abstract
+
+   This document describes the UDP Reflection utility.  It is similar to
+   Ping in that it relies on a stateless message exchange between two
+   hosts.  The initiating host sends a UDP packet with an unused
+   destination port and the destination host sends back an ICMP
+   Destination Unreachable.  The payload of the ICMP message includes a
+   possibly trimmed copy of the original UDP message.  Specifically, if
+   the original message is sent over IPv6, the ICMP message includes the
+   IPv6 header and IPv6 extension headers and options if they are
+   present.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 18 October 2025.
+
+
+
+
+
+Moeller, et al.          Expires 18 October 2025                [Page 1]
+
+Internet-Draft               UDP Reflection                   April 2025
+
+
+Copyright Notice
+
+   Copyright (c) 2025 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
+   2.  Requirement Language  . . . . . . . . . . . . . . . . . . . .   3
+   3.  Use Cases . . . . . . . . . . . . . . . . . . . . . . . . . .   3
+   4.  Theory of Operation . . . . . . . . . . . . . . . . . . . . .   4
+   5.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   4
+   6.  Security Considerations . . . . . . . . . . . . . . . . . . .   4
+   7.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   4
+     7.1.  Normative References  . . . . . . . . . . . . . . . . . .   4
+     7.2.  Informative References  . . . . . . . . . . . . . . . . .   5
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   6
+
+1.  Introduction
+
+   The UDP Reflection utility is a UDP [RFC768] based diagnostic tool.
+   It is similar to the Ping [RFC2151] utility as it uses a message
+   exchange between an initiating host and a destination host.
+
+   Each message exchange includes:
+
+   *  A UDP packet that is sent by the initiating host to the
+      destination host with a reserved destination port number.  Port
+      33434 has been reserved by IANA for Traceroute and is used in UDP
+      Reflection as well.
+
+   *  An ICMP Destination Unreachable that is sent back to the
+      initiating host due to the unused port in the UDP packet.  The
+      ICMP message includes, in its payload, the original UDP packet (or
+      a trimmed version of it), including its IP header and payload.
+
+
+
+
+
+
+
+Moeller, et al.          Expires 18 October 2025                [Page 2]
+
+Internet-Draft               UDP Reflection                   April 2025
+
+
+   UDP Reflection operates in a similar manner to the last hop of the
+   Traceroute utility [RFC2151].  As opposed to Traceroute, UDP
+   Reflection does not iteratively try to reach each of the routers
+   along the path to the destination, but directly sends a UDP packet to
+   the destination host.
+
+   The UDP Reflection exchange allows the initiating host to verify the
+   reachability to the destination and to measure the round-trip time.
+   The initiating host can also extract the header of the original
+   packet from the received ICMP message, allowing to analyze header
+   fields or extension headers that were modified along the path between
+   the initiating host and the destination host.
+
+2.  Requirement Language
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in BCP
+   14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+3.  Use Cases
+
+   The following protocols define mutable IPv6 extension headers that
+   can be used to trace a path and its performance:
+
+   *  IPv6 Options for In Situ Operations, Administration, and
+      Maintenance (IOAM) [RFC9486]
+
+   *  Inband Flow Analyzer [I-D.kumar-ippm-ifa]
+
+   *  Path Tracing in SRv6 networks [I-D.filsfils-ippm-path-tracing]
+
+   *  Segment Routing Header encapsulation for In-situ OAM Data
+      [I-D.ali-spring-ioam-srv6]
+
+   These extensions are used to collect information along a packet's
+   delivery path.  Currently, the collected information is sent to a
+   controller for processing.  However, in some cases this information
+   is relevant to the sender.
+
+   The Reflection utility defined in this document provides a mechanism
+   by which this information can be returned to the initiating host.
+
+
+
+
+
+
+
+
+Moeller, et al.          Expires 18 October 2025                [Page 3]
+
+Internet-Draft               UDP Reflection                   April 2025
+
+
+4.  Theory of Operation
+
+   The UDP Reflection utility is invoked by an initiating host that
+   sends a sequence of one or more packets.  Each message exchange
+   includes the following procedure:
+
+   *  The initiating host sends a UDP packet with a reserved UDP
+      destination port.  Port 33434, which has been reserved by IANA for
+      Traceroute, is used for this purpose.  The packet can be sent over
+      IPv4 or IPv6.  If the packet is IPv6, it can include one or more
+      extension fields.
+
+   *  The destination host receives the UDP packet and detects that the
+      UDP destination port is unused.  It generates an ICMP Destination
+      Unreachable back to the initiating host.  If the original packet
+      is IPv4, then the ICMP message includes the first 8 octets of the
+      original packet, as defined in [RFC792].  If the original packet
+      is IPv6, the ICMP message includes as much of the original message
+      as possible without exceeding the MTU, as defined in [RFC4443].
+
+   *  The initiating host receives the ICMP message and can analyze its
+      payload.
+
+5.  IANA Considerations
+
+   This document does not include any requirements from IANA.
+
+6.  Security Considerations
+
+   From a security perspective this document does not introduce new
+   security threats beyond the threats that are already applicable for
+   existing ICMP messages, and are described in [RFC792] and [RFC4443].
+
+7.  References
+
+7.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/info/rfc2119>.
+
+   [RFC4443]  Conta, A., Deering, S., and M. Gupta, Ed., "Internet
+              Control Message Protocol (ICMPv6) for the Internet
+              Protocol Version 6 (IPv6) Specification", STD 89,
+              RFC 4443, DOI 10.17487/RFC4443, March 2006,
+              <https://www.rfc-editor.org/info/rfc4443>.
+
+
+
+
+Moeller, et al.          Expires 18 October 2025                [Page 4]
+
+Internet-Draft               UDP Reflection                   April 2025
+
+
+   [RFC768]   Postel, J., "User Datagram Protocol", STD 6, RFC 768,
+              DOI 10.17487/RFC0768, August 1980,
+              <https://www.rfc-editor.org/info/rfc768>.
+
+   [RFC792]   Postel, J., "Internet Control Message Protocol", STD 5,
+              RFC 792, DOI 10.17487/RFC0792, September 1981,
+              <https://www.rfc-editor.org/info/rfc792>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/info/rfc8174>.
+
+7.2.  Informative References
+
+   [I-D.ali-spring-ioam-srv6]
+              Ali, Z., Gandhi, R., Filsfils, C., Brockners, F., Nainar,
+              N. K., Pignataro, C., Li, C., Chen, M., and G. Dawra,
+              "Segment Routing Header encapsulation for In-situ OAM
+              Data", Work in Progress, Internet-Draft, draft-ali-spring-
+              ioam-srv6-06, 10 July 2022,
+              <https://datatracker.ietf.org/doc/html/draft-ali-spring-
+              ioam-srv6-06>.
+
+   [I-D.filsfils-ippm-path-tracing]
+              Filsfils, C., Abdelsalam, A., Camarillo, P., Yufit, M.,
+              Graf, T., Su, Y., Matsushima, S., Valentine, M., and
+              Dhamija, "Path Tracing in SRv6 networks", Work in
+              Progress, Internet-Draft, draft-filsfils-ippm-path-
+              tracing-02, 25 November 2024,
+              <https://datatracker.ietf.org/doc/html/draft-filsfils-
+              ippm-path-tracing-02>.
+
+   [I-D.kumar-ippm-ifa]
+              Kumar, J., Anubolu, S., Lemon, J., Manur, R., Holbrook,
+              H., Ghanwani, A., Cai, D., Ou, H., Li, Y., and X. Wang,
+              "Inband Flow Analyzer", Work in Progress, Internet-Draft,
+              draft-kumar-ippm-ifa-08, 26 April 2024,
+              <https://datatracker.ietf.org/doc/html/draft-kumar-ippm-
+              ifa-08>.
+
+   [RFC2151]  Kessler, G. and S. Shepard, "A Primer On Internet and TCP/
+              IP Tools and Utilities", FYI 30, RFC 2151,
+              DOI 10.17487/RFC2151, June 1997,
+              <https://www.rfc-editor.org/info/rfc2151>.
+
+
+
+
+
+
+
+Moeller, et al.          Expires 18 October 2025                [Page 5]
+
+Internet-Draft               UDP Reflection                   April 2025
+
+
+   [RFC9486]  Bhandari, S., Ed. and F. Brockners, Ed., "IPv6 Options for
+              In Situ Operations, Administration, and Maintenance
+              (IOAM)", RFC 9486, DOI 10.17487/RFC9486, September 2023,
+              <https://www.rfc-editor.org/info/rfc9486>.
+
+Authors' Addresses
+
+   Sebastian Moeller
+   Organization
+   Email: moeller0@gmx.de
+
+
+   Tal Mizrahi
+   Huawei
+   Matam
+   Haifa 3190501
+   Israel
+   Email: tal.mizrahi.phd@gmail.com
+
+
+   Xiaoming He
+   China Telecom
+   Email: hexm4@chinatelecom.cn
+
+
+   Tianran Zhou
+   Huawei
+   156 Beiqing Rd.
+   Beijing
+   100095
+   China
+   Email: zhoutianran@huawei.com
+
+
+   Ron Bonica
+   Juniper Networks
+   United States of America
+   Email: rbonica@juniper.net
+
+
+   Xiao Min
+   ZTE Corp.
+   Email: xiao.min2@zte.com.cn
+
+
+
+
+
+
+
+
+Moeller, et al.          Expires 18 October 2025                [Page 6]
